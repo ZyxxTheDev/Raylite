@@ -11,7 +11,7 @@
 -- sec:AddTextBox({Text="Name", Placeholder="Type name", Callback=function(v) print(v) end})
 -- sec:AddKeybind({Text="Open Menu", Default=Enum.KeyCode.RightControl, Callback=function() print("key pressed") end})
 -- sec:AddColorPicker({Text="Accent", Default=Color3.fromRGB(98,114,164), Callback=function(c) print(c) end})
--- ui:Notify({Title="Loaded", Text="Raylite initialised"})
+-- ui:Notify({Title="Loaded", Text="Raylite initialized"})
 
 local Raylite = {}
 Raylite.__index = Raylite
@@ -90,7 +90,8 @@ function Raylite:CreateWindow(cfg)
 	local tooltip = new("TextLabel", {
 		Name = "RayliteTooltip",
 		Parent = screenGui,
-		BackgroundTransparency = 1,
+		BackgroundColor3 = theme.Panel,
+		BackgroundTransparency = 0.05,
 		Size = UDim2.new(0,200,0,28),
 		Visible = false,
 		Font = Enum.Font.Gotham,
@@ -100,6 +101,7 @@ function Raylite:CreateWindow(cfg)
 		TextWrapped = true,
 	})
 	new("UICorner", {Parent = tooltip, CornerRadius = UDim.new(0,6)})
+	new("UIStroke", {Parent = tooltip, Color = theme.Stroke, Transparency = 0.5})
 
 	-- root window
 	local root = new("Frame", {
@@ -149,24 +151,26 @@ function Raylite:CreateWindow(cfg)
 	-- Theme toggle
 	local themeBtn = new("TextButton", {
 		Parent = controlHolder,
-		Text = (themeName == "Dark") and "🌙" or "☀",
+		Text = (themeName == "Dark") and "🌙" or "☀️",
 		AutoButtonColor = false,
 		Size = UDim2.fromOffset(40,28),
 		Font = Enum.Font.Gotham,
 		TextSize = 14,
+		BackgroundColor3 = theme.Panel,
+		TextColor3 = theme.Text,
 	})
 	new("UICorner", {Parent = themeBtn, CornerRadius = UDim.new(0,8)})
 	new("UIStroke", {Parent = themeBtn, Color = theme.Stroke, Transparency = 0.3})
 
 	-- Minimize and Close
 	local minBtn = new("TextButton", {
-		Parent = controlHolder, Text = "—", Size = UDim2.fromOffset(36,28), AutoButtonColor = false, Font = Enum.Font.GothamSemibold, TextSize = 18
+		Parent = controlHolder, Text = "—", Size = UDim2.fromOffset(36,28), AutoButtonColor = false, Font = Enum.Font.GothamSemibold, TextSize = 18, BackgroundColor3 = theme.Panel, TextColor3 = theme.Text
 	})
 	new("UICorner", {Parent = minBtn, CornerRadius = UDim.new(0,8)})
 	new("UIStroke", {Parent = minBtn, Color = theme.Stroke, Transparency = 0.3})
 
 	local closeBtn = new("TextButton", {
-		Parent = controlHolder, Text = "✕", Size = UDim2.fromOffset(36,28), AutoButtonColor = false, Font = Enum.Font.GothamSemibold, TextSize = 16
+		Parent = controlHolder, Text = "✕", Size = UDim2.fromOffset(36,28), AutoButtonColor = false, Font = Enum.Font.GothamSemibold, TextSize = 16, BackgroundColor3 = theme.Panel, TextColor3 = theme.Text
 	})
 	new("UICorner", {Parent = closeBtn, CornerRadius = UDim.new(0,8)})
 	new("UIStroke", {Parent = closeBtn, Color = theme.Stroke, Transparency = 0.3})
@@ -205,27 +209,45 @@ function Raylite:CreateWindow(cfg)
 		local t = THEMES[name] or THEMES.Dark
 		self._theme = t
 		self._themeName = name
-		-- update main palette quickly
+		-- update main palette
 		root.BackgroundColor3 = t.Primary
+		tooltip.BackgroundColor3 = t.Panel
+		tooltip.TextColor3 = t.Text
 		for _, v in ipairs(root:GetDescendants()) do
-			-- update obvious properties only
 			if v:IsA("TextLabel") or v:IsA("TextBox") or v:IsA("TextButton") then
-				-- try maintain custom colors: skip if element has Color3 set to something non-standard? We'll update generic fields
-				pcall(function()
-					-- small heuristic: update primary text color if it's using old theme text/subtext
-					v.TextColor3 = t.Text
-				end)
-			elseif v:IsA("Frame") and v.Name == "SectionPanel" then
-				v.BackgroundColor3 = t.Panel
+				if v.TextColor3 == self._theme.Text then v.TextColor3 = t.Text end
+				if v.TextColor3 == self._theme.Subtext then v.TextColor3 = t.Subtext end
+				if v.BackgroundColor3 == self._theme.Panel then v.BackgroundColor3 = t.Panel end
+				if v.BackgroundColor3 == self._theme.Accent then v.BackgroundColor3 = t.Accent end
+				if v.BackgroundColor3 == self._theme.Hover then v.BackgroundColor3 = t.Hover end
+			elseif v:IsA("Frame") then
+				if v.BackgroundColor3 == self._theme.Primary then v.BackgroundColor3 = t.Primary end
+				if v.BackgroundColor3 == self._theme.Panel then v.BackgroundColor3 = t.Panel end
+				if v.BackgroundColor3 == self._theme.Accent then v.BackgroundColor3 = t.Accent end
+				if v.BackgroundColor3 == self._theme.Hover then v.BackgroundColor3 = t.Hover end
+			elseif v:IsA("UIStroke") then
+				if v.Color == self._theme.Stroke then v.Color = t.Stroke end
+			end
+		end
+		for _, notif in ipairs(notifRoot:GetChildren()) do
+			if notif:IsA("Frame") then
+				notif.BackgroundColor3 = t.Panel
+				for _, child in ipairs(notif:GetDescendants()) do
+					if child:IsA("TextLabel") then
+						child.TextColor3 = t.Text
+					elseif child:IsA("UIStroke") then
+						child.Color = t.Stroke
+					end
+				end
 			end
 		end
 		-- update header icons
-		themeBtn.Text = (name == "Dark") and "🌙" or "☀"
+		themeBtn.Text = (name == "Dark") and "🌙" or "☀️"
 	end
 
 	-- Tooltip helper
 	local tooltipHideTick = 0
-	local function showTooltip(text)
+	local function showTooltip(text, elem)
 		if not text or text == "" then tooltip.Visible = false; return end
 		tooltip.Text = "  " .. text
 		tooltip.Visible = true
@@ -281,7 +303,7 @@ function Raylite:CreateWindow(cfg)
 	-- Resizing (grip)
 	do
 		local resizing = false
-		local startSize, startPos, startMouse
+		local startSize, startMouse
 		grip.MouseEnter:Connect(function() grip.BackgroundTransparency = 0.9; grip.BackgroundColor3 = win._theme.Hover end)
 		grip.MouseLeave:Connect(function() grip.BackgroundTransparency = 1 end)
 		grip.InputBegan:Connect(function(i)
@@ -302,21 +324,35 @@ function Raylite:CreateWindow(cfg)
 		end)
 	end
 
-	-- Notifications
+	-- Notifications with stacking
 	function win:Notify(data)
 		data = data or {}
-		local card = new("Frame", {Parent = self._notifyRoot, BackgroundColor3 = self._theme.Panel, Size = UDim2.fromOffset(300, 74), Position = UDim2.fromScale(1, 0.95), AnchorPoint = Vector2.new(1,1)})
+		local card = new("Frame", {Parent = self._notifyRoot, BackgroundColor3 = self._theme.Panel, Size = UDim2.fromOffset(300, 74), AnchorPoint = Vector2.new(1,1)})
 		new("UICorner", {Parent = card, CornerRadius = UDim.new(0,12)})
 		new("UIStroke", {Parent = card, Color = self._theme.Stroke, Transparency = 0.3})
 		card.ZIndex = 60
 		local pad = new("UIPadding", {Parent = card, PaddingTop = UDim.new(0,10), PaddingLeft = UDim.new(0,12), PaddingRight = UDim.new(0,12)})
 		local title = new("TextLabel", {Parent = card, BackgroundTransparency = 1, Text = data.Title or "Notice", Font = Enum.Font.GothamSemibold, TextSize = 15, TextColor3 = self._theme.Text, Size = UDim2.new(1,0,0,18), TextXAlignment = Enum.TextXAlignment.Left})
 		local text = new("TextLabel", {Parent = card, BackgroundTransparency = 1, Text = data.Text or "", Font = Enum.Font.Gotham, TextSize = 14, TextColor3 = self._theme.Subtext, Position = UDim2.fromOffset(0,20), Size = UDim2.new(1,0,1,-20), TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left})
-		card.Position = UDim2.fromOffset(card.AbsoluteSize.X + 20, card.AbsolutePosition.Y)
-		tw(card, 0.28, {Position = UDim2.fromScale(0.98, 0.98)}):Play()
+		
+		-- Stack notifications upwards from bottom right
+		local notifs = {}
+		for _, child in ipairs(self._notifyRoot:GetChildren()) do
+			if child:IsA("Frame") and child ~= card then
+				table.insert(notifs, child)
+			end
+		end
+		table.sort(notifs, function(a, b) return a.AbsolutePosition.Y > b.AbsolutePosition.Y end)
+		local yOffset = -20  -- Start below the screen edge
+		for _, n in ipairs(notifs) do
+			yOffset = yOffset - n.AbsoluteSize.Y - 8
+		end
+		card.Position = UDim2.new(1, 20, 1, yOffset)
+		tw(card, 0.28, {Position = UDim2.new(0.98, 0, 1, yOffset + 20)}):Play()  -- Slight inset
+		
 		task.delay(data.Duration or 3, function()
 			if card and card.Parent then
-				tw(card, 0.22, {Position = UDim2.fromOffset(card.AbsoluteSize.X + 20, card.AbsolutePosition.Y)}):Play()
+				tw(card, 0.22, {Position = UDim2.new(1, 20, card.Position.Y.Scale, card.Position.Y.Offset)}):Play()
 				task.wait(0.26)
 				pcall(function() card:Destroy() end)
 			end
@@ -326,7 +362,6 @@ function Raylite:CreateWindow(cfg)
 
 	-- Search/filter: filters visible controls in active tab by label text
 	do
-		local lastText = ""
 		local function filterControls(txt)
 			txt = (txt or ""):lower()
 			-- find active tab
@@ -334,26 +369,23 @@ function Raylite:CreateWindow(cfg)
 				if t._page.Visible then
 					for _, section in ipairs(t._sections) do
 						local anyVisible = false
-						for _, child in ipairs(section._section:GetChildren()) do
-							-- Look for labels/buttons/rows with Text property
-							if child:IsA("Frame") or child:IsA("TextButton") or child:IsA("TextLabel") then
+						for _, child in ipairs(section._content:GetChildren()) do
+							if child:IsA("Frame") then
 								-- check descendants for text labels
 								local matched = false
 								for _, d in ipairs(child:GetDescendants()) do
 									if d:IsA("TextLabel") or d:IsA("TextButton") or d:IsA("TextBox") then
 										local s = (d.Text or ""):lower()
-										if s:find(txt) then matched = true; break end
+										if s:find(txt, 1, true) then matched = true; break end
 									end
 								end
-								-- if row itself has Text
-								local st = (child.Text or ""):lower()
-								if not matched and st ~= "" and st:find(txt) then matched = true end
 								child.Visible = matched or txt == ""
-								if child.Visible and not (child == section._titleLabel) then anyVisible = true end
+								if child.Visible then anyVisible = true end
 							end
 						end
-						-- show/hide section based on if it has visible children (but always show title)
-						section._section.Visible = anyVisible or txt == ""
+						-- show/hide content based on visible children
+						section._content.Visible = anyVisible or txt == ""
+						section._section.Size = UDim2.new(1, -12, 0, section._titleRow.AbsoluteSize.Y + (section._content.Visible and section._content.AbsoluteSize.Y or 0) + 22)
 					end
 				end
 			end
@@ -410,13 +442,13 @@ function Raylite:CreateWindow(cfg)
 			-- title row with collapse arrow
 			local titleRow = new("Frame", {Parent = section, BackgroundTransparency = 1, Size = UDim2.new(1,0,0,22)})
 			local titleLabel = new("TextLabel", {Parent = titleRow, BackgroundTransparency = 1, Text = title, Font = Enum.Font.GothamSemibold, TextSize = 16, TextColor3 = self._parent._theme.Text, Size = UDim2.new(1, -28, 1, 0), TextXAlignment = Enum.TextXAlignment.Left})
-			local collapseBtn = new("TextButton", {Parent = titleRow, Text = "▾", Size = UDim2.new(0,24,0,20), Position = UDim2.new(1,-24,0,0), AutoButtonColor = false, Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = self._parent._theme.Subtext})
+			local collapseBtn = new("TextButton", {Parent = titleRow, Text = "▾", Size = UDim2.new(0,24,0,20), Position = UDim2.new(1,-24,0,0), AutoButtonColor = false, Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = self._parent._theme.Subtext, BackgroundTransparency = 1})
 			new("UICorner", {Parent = collapseBtn, CornerRadius = UDim.new(0,6)})
 
-			local content = new("Frame", {Parent = section, BackgroundTransparency = 1, Size = UDim2.new(1,0,0,0), AutomaticSize = Enum.AutomaticSize.Y})
+			local content = new("Frame", {Parent = section, BackgroundTransparency = 1, Size = UDim2.new(1,0,0,0), AutomaticSize = Enum.AutomaticSize.Y, Position = UDim2.new(0,0,0,22)})
 			new("UIListLayout", {Parent = content, Padding = UDim.new(0,8), SortOrder = Enum.SortOrder.LayoutOrder})
 
-			local secObj = { _section = section, _content = content, _parentTab = self, _titleLabel = titleLabel }
+			local secObj = { _section = section, _content = content, _parentTab = self, _titleLabel = titleLabel, _titleRow = titleRow }
 
 			-- collapse behavior
 			local collapsed = false
@@ -445,9 +477,12 @@ function Raylite:CreateWindow(cfg)
 			function secObj:AddButton(cfg)
 				cfg = cfg or {}
 				local row = controlRow(36)
-				local btn = new("TextButton", {Parent = row, Text = cfg.Text or "Button", AutoButtonColor = false, Font = Enum.Font.Gotham, TextSize = 14, TextColor3 = self._parentTab._parent._theme.Panel, BackgroundColor3 = self._parentTab._parent._theme.Accent, Size = UDim2.fromOffset(140, 32)})
+				local btn = new("TextButton", {Parent = row, Text = cfg.Text or "Button", AutoButtonColor = false, Font = Enum.Font.Gotham, TextSize = 14, TextColor3 = self._parentTab._parent._theme.Text, BackgroundColor3 = self._parentTab._parent._theme.Accent, Size = UDim2.fromOffset(140, 32)})
 				new("UICorner", {Parent = btn, CornerRadius = UDim.new(0,8)})
-				local hoverIn = tw(btn, 0.12, {BackgroundTransparency = 0}) -- placeholder tween
+				local hoverIn = tw(btn, 0.12, {BackgroundColor3 = self._parentTab._parent._theme.Accent:Lerp(Color3.new(1,1,1), 0.1)})
+				local hoverOut = tw(btn, 0.12, {BackgroundColor3 = self._parentTab._parent._theme.Accent})
+				btn.MouseEnter:Connect(function() hoverIn:Play() end)
+				btn.MouseLeave:Connect(function() hoverOut:Play() end)
 				btn.MouseButton1Click:Connect(function()
 					if typeof(cfg.Callback) == "function" then
 						task.spawn(cfg.Callback)
@@ -504,6 +539,8 @@ function Raylite:CreateWindow(cfg)
 					end
 				end)
 				row.Destroying:Connect(function() if conn and conn.Connected then conn:Disconnect() end end)
+				bar.MouseEnter:Connect(function() showTooltip(cfg.Tooltip) end)
+				bar.MouseLeave:Connect(function() showTooltip("") end)
 				return {
 					Set = function(_, v) value = math.clamp(v, min, max); fill.Size = UDim2.fromScale((value-min)/(max-min),1); label.Text = (cfg.Text or "Slider") .. ": " .. tostring(value); if typeof(cfg.Callback) == "function" then task.spawn(cfg.Callback, value) end end,
 					Get = function() return value end
@@ -515,26 +552,28 @@ function Raylite:CreateWindow(cfg)
 				local options = cfg.Options or {}
 				local value = cfg.Default or options[1]
 				local row = controlRow(34)
-				local btn = new("TextButton", {Parent = row, AutoButtonColor = false, BackgroundColor3 = self._parentTab._parent._theme.Panel, Size = UDim2.new(0,260,0,28), Text = tostring(value or "Select"), Font = Enum.Font.Gotham, TextSize = 14, TextColor3 = self._parentTab._parent._theme.Text})
+				local btn = new("TextButton", {Parent = row, AutoButtonColor = false, BackgroundColor3 = self._parentTab._parent._theme.Panel, Size = UDim2.new(1,0,0,28), Text = tostring(value or "Select"), Font = Enum.Font.Gotham, TextSize = 14, TextColor3 = self._parentTab._parent._theme.Text})
 				new("UICorner", {Parent = btn, CornerRadius = UDim.new(0,8)})
 				new("UIStroke", {Parent = btn, Color = self._parentTab._parent._theme.Stroke, Transparency = 0.3})
 				local open = false
-				local listFrame = new("Frame", {Parent = row, BackgroundColor3 = self._parentTab._parent._theme.Panel, Size = UDim2.new(0,260,0,0), ClipsDescendants = true})
+				local listFrame = new("Frame", {Parent = row, BackgroundColor3 = self._parentTab._parent._theme.Panel, Size = UDim2.new(1,0,0,0), Position = UDim2.new(0,0,0,30), ClipsDescendants = true})
 				new("UICorner", {Parent = listFrame, CornerRadius = UDim.new(0,8)})
-				local layo = new("UIListLayout", {Parent = listFrame, SortOrder = Enum.SortOrder.LayoutOrder})
+				new("UIStroke", {Parent = listFrame, Color = self._parentTab._parent._theme.Stroke, Transparency = 0.3})
+				local scroller = new("ScrollingFrame", {Parent = listFrame, BackgroundTransparency = 1, Size = UDim2.fromScale(1,1), CanvasSize = UDim2.new(0,0,0,0), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollBarThickness = 4})
+				local layo = new("UIListLayout", {Parent = scroller, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0,2)})
 				local function set(v)
 					value = v; btn.Text = tostring(v)
 					if typeof(cfg.Callback) == "function" then task.spawn(cfg.Callback, v) end
 				end
 				local function toggleList(state)
 					open = state
-					tw(listFrame, 0.18, {Size = UDim2.new(0,260,0, state and math.min(#options*30, 180) or 0)}):Play()
+					tw(listFrame, 0.18, {Size = UDim2.new(1,0,0, state and math.min(#options*30, 180) or 0)}):Play()
 				end
 				btn.MouseButton1Click:Connect(function() toggleList(not open) end)
 				local function rebuildOptions()
-					for _, c in ipairs(listFrame:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
+					for _, c in ipairs(scroller:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
 					for _, opt in ipairs(options) do
-						local o = new("TextButton", {Parent = listFrame, AutoButtonColor = true, Text = tostring(opt), BackgroundTransparency = 1, Size = UDim2.new(1,0,0,30), Font = Enum.Font.Gotham, TextSize = 14, TextColor3 = self._parentTab._parent._theme.Subtext})
+						local o = new("TextButton", {Parent = scroller, AutoButtonColor = true, Text = tostring(opt), BackgroundTransparency = 1, Size = UDim2.new(1,0,0,30), Font = Enum.Font.Gotham, TextSize = 14, TextColor3 = self._parentTab._parent._theme.Subtext})
 						o.MouseButton1Click:Connect(function() set(opt); toggleList(false) end)
 					end
 				end
@@ -570,13 +609,13 @@ function Raylite:CreateWindow(cfg)
 				local key = cfg.Default or Enum.KeyCode.Unknown
 				local row = controlRow(32)
 				local label = new("TextLabel", {Parent = row, BackgroundTransparency = 1, Text = cfg.Text or "Keybind", Font = Enum.Font.Gotham, TextSize = 14, TextColor3 = self._parentTab._parent._theme.Text, Size = UDim2.new(1,-100,1,0), TextXAlignment = Enum.TextXAlignment.Left})
-				local btn = new("TextButton", {Parent = row, Text = tostring(key.Name or "Unbound"), AutoButtonColor = false, Size = UDim2.new(0,88,0,26), BackgroundColor3 = self._parentTab._parent._theme.Panel, Font = Enum.Font.Gotham, TextSize = 13})
+				local btn = new("TextButton", {Parent = row, Text = key.Name ~= "Unknown" and key.Name or "Unbound", AutoButtonColor = false, Size = UDim2.new(0,88,0,26), BackgroundColor3 = self._parentTab._parent._theme.Panel, Font = Enum.Font.Gotham, TextSize = 13, TextColor3 = self._parentTab._parent._theme.Text})
 				new("UICorner", {Parent = btn, CornerRadius = UDim.new(0,6)})
 				new("UIStroke", {Parent = btn, Color = self._parentTab._parent._theme.Stroke, Transparency = 0.3})
 				local capturing = false
 
 				local function displayKey(k)
-					btn.Text = (k and tostring(k.Name)) or "Unbound"
+					btn.Text = (k and k.Name ~= "Unknown") and k.Name or "Unbound"
 				end
 				displayKey(key)
 
@@ -585,21 +624,19 @@ function Raylite:CreateWindow(cfg)
 					btn.Text = "Press key..."
 				end)
 
-				local captureConn
-				captureConn = UserInputService.InputBegan:Connect(function(input, processed)
+				local captureConn = UserInputService.InputBegan:Connect(function(input, processed)
 					if capturing and not processed then
 						if input.UserInputType == Enum.UserInputType.Keyboard then
 							key = input.KeyCode
 							displayKey(key)
 							capturing = false
-							if typeof(cfg.OnSet) == "function" then task.spawn(cfg.OnSet, key) end
+							if typeof(cfg.Callback) == "function" then task.spawn(cfg.Callback, key) end
 						end
 					end
 				end)
 
 				-- runtime hook: when the key is pressed, call callback
-				local runtimeConn
-				runtimeConn = UserInputService.InputBegan:Connect(function(input, processed)
+				local runtimeConn = UserInputService.InputBegan:Connect(function(input, processed)
 					if not processed and input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == key then
 						if typeof(cfg.Callback) == "function" then task.spawn(cfg.Callback) end
 					end
@@ -624,7 +661,7 @@ function Raylite:CreateWindow(cfg)
 				new("UICorner", {Parent = preview, CornerRadius = UDim.new(0,6)})
 				new("UIStroke", {Parent = preview, Color = self._parentTab._parent._theme.Stroke, Transparency = 0.3})
 				-- open color subpanel
-				local panel = new("Frame", {Parent = row, BackgroundColor3 = self._parentTab._parent._theme.Panel, Size = UDim2.new(1,-0,0,0), Position = UDim2.new(0,0,0,26), ClipsDescendants = true})
+				local panel = new("Frame", {Parent = row, BackgroundColor3 = self._parentTab._parent._theme.Panel, Size = UDim2.new(1,0,0,0), Position = UDim2.new(0,0,0,26), ClipsDescendants = true})
 				new("UICorner", {Parent = panel, CornerRadius = UDim.new(0,8)})
 				new("UIStroke", {Parent = panel, Color = self._parentTab._parent._theme.Stroke, Transparency = 0.3})
 				local container = new("Frame", {Parent = panel, BackgroundTransparency = 1, Size = UDim2.new(1,0,0,120)})
@@ -632,14 +669,14 @@ function Raylite:CreateWindow(cfg)
 				container.AutomaticSize = Enum.AutomaticSize.Y
 
 				-- RGB sliders
-				local function rgbSlider(name, default)
-					local r = default or 128
+				local function rgbSlider(component, default)
+					local val = default or 128
 					local rRow = new("Frame", {Parent = container, BackgroundTransparency = 1, Size = UDim2.new(1,0,0,36)})
-					local lbl = new("TextLabel", {Parent = rRow, BackgroundTransparency = 1, Text = name .. ": " .. tostring(r), Font = Enum.Font.Gotham, TextSize = 13, TextColor3 = self._parentTab._parent._theme.Subtext, Size = UDim2.new(1,-0,0,16), TextXAlignment = Enum.TextXAlignment.Left})
+					local lbl = new("TextLabel", {Parent = rRow, BackgroundTransparency = 1, Text = component .. ": " .. tostring(val), Font = Enum.Font.Gotham, TextSize = 13, TextColor3 = self._parentTab._parent._theme.Subtext, Size = UDim2.new(1,-0,0,16), TextXAlignment = Enum.TextXAlignment.Left})
 					local bar = new("Frame", {Parent = rRow, BackgroundColor3 = self._parentTab._parent._theme.Panel, Size = UDim2.fromOffset(200,10), Position = UDim2.fromOffset(0,20)})
 					new("UICorner", {Parent = bar, CornerRadius = UDim.new(0,6)})
 					new("UIStroke", {Parent = bar, Color = self._parentTab._parent._theme.Stroke, Transparency = 0.3})
-					local fill = new("Frame", {Parent = bar, BackgroundColor3 = self._parentTab._parent._theme.Accent, Size = UDim2.fromScale(r/255,1)})
+					local fill = new("Frame", {Parent = bar, BackgroundColor3 = self._parentTab._parent._theme.Accent, Size = UDim2.fromScale(val/255,1)})
 					new("UICorner", {Parent = fill, CornerRadius = UDim.new(0,6)})
 					local dragging = false
 					bar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end end)
@@ -647,33 +684,40 @@ function Raylite:CreateWindow(cfg)
 					local conn = UserInputService.InputChanged:Connect(function(i)
 						if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
 							local rel = math.clamp((i.Position.X - bar.AbsolutePosition.X)/bar.AbsoluteSize.X, 0, 1)
-							r = math.floor(255 * rel + 0.5)
-							lbl.Text = name .. ": " .. tostring(r)
-							fill.Size = UDim2.fromScale(r/255, 1)
-							color = Color3.fromRGB(r, color and math.floor(color.G*255) or 0, color and math.floor(color.B*255) or 0)
+							val = math.floor(255 * rel + 0.5)
+							lbl.Text = component .. ": " .. tostring(val)
+							fill.Size = UDim2.fromScale(val/255, 1)
+							local r = math.floor(color.R * 255)
+							local g = math.floor(color.G * 255)
+							local b = math.floor(color.B * 255)
+							if component == "R" then r = val end
+							if component == "G" then g = val end
+							if component == "B" then b = val end
+							color = Color3.fromRGB(r, g, b)
 							preview.BackgroundColor3 = color
 							if typeof(cfg.Callback) == "function" then task.spawn(cfg.Callback, color) end
 						end
 					end)
 					rRow.Destroying:Connect(function() if conn and conn.Connected then conn:Disconnect() end end)
-					return function() return r end
+					return val
 				end
 
-				local getR = rgbSlider("R", math.floor(color.R*255))
-				local getG = rgbSlider("G", math.floor(color.G*255))
-				local getB = rgbSlider("B", math.floor(color.B*255))
+				rgbSlider("R", math.floor(color.R*255))
+				rgbSlider("G", math.floor(color.G*255))
+				rgbSlider("B", math.floor(color.B*255))
 
 				local open = false
-				local toggle = new("TextButton", {Parent = row, Text = "Edit", BackgroundColor3 = self._parentTab._parent._theme.Panel, Size = UDim2.new(0,88,0,26), Position = UDim2.new(1,-88,0,0), AutoButtonColor = false, Font = Enum.Font.Gotham, TextSize = 13})
+				local toggle = new("TextButton", {Parent = row, Text = "Edit", BackgroundColor3 = self._parentTab._parent._theme.Panel, Size = UDim2.new(0,88,0,26), Position = UDim2.new(1,-88,0,0), AutoButtonColor = false, Font = Enum.Font.Gotham, TextSize = 13, TextColor3 = self._parentTab._parent._theme.Text})
 				new("UICorner", {Parent = toggle, CornerRadius = UDim.new(0,6)})
 				new("UIStroke", {Parent = toggle, Color = self._parentTab._parent._theme.Stroke, Transparency = 0.3})
 				toggle.MouseButton1Click:Connect(function()
 					open = not open
 					tw(panel, 0.18, {Size = UDim2.new(1,0,0, open and 140 or 0)}):Play()
 				end)
-				-- update preview when sliders change (we already set preview inside sliders)
 				-- initial preview
 				preview.BackgroundColor3 = color
+				toggle.MouseEnter:Connect(function() showTooltip(cfg.Tooltip) end)
+				toggle.MouseLeave:Connect(function() showTooltip("") end)
 				return {
 					Set = function(_, c) color = c; preview.BackgroundColor3 = color; if typeof(cfg.Callback) == "function" then task.spawn(cfg.Callback, color) end end,
 					Get = function() return color end

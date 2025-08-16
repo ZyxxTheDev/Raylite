@@ -111,6 +111,7 @@ function Raylite:CreateWindow(cfg)
 		Size = UDim2.fromOffset(720, 480),
 		Position = UDim2.fromScale(0.5,0.5),
 		AnchorPoint = Vector2.new(0.5,0.5),
+		Visible = false,  -- Initially hidden for key system
 	})
 	new("UICorner", {CornerRadius = UDim.new(0,14), Parent = root})
 	new("UIStroke", {Color = theme.Stroke, Thickness = 1, Transparency = 0.18, Parent = root})
@@ -385,7 +386,6 @@ function Raylite:CreateWindow(cfg)
 						end
 						-- show/hide content based on visible children
 						section._content.Visible = anyVisible or txt == ""
-						section._section.Size = UDim2.new(1, -12, 0, section._titleRow.AbsoluteSize.Y + (section._content.Visible and section._content.AbsoluteSize.Y or 0) + 22)
 					end
 				end
 			end
@@ -630,7 +630,6 @@ function Raylite:CreateWindow(cfg)
 							key = input.KeyCode
 							displayKey(key)
 							capturing = false
-							if typeof(cfg.Callback) == "function" then task.spawn(cfg.Callback, key) end
 						end
 					end
 				end)
@@ -757,6 +756,67 @@ function Raylite:CreateWindow(cfg)
 		if tooltip.Visible and tooltipHideTick ~= 0 and tick() > tooltipHideTick then
 			tooltip.Visible = false
 			tooltipHideTick = 0
+		end
+	end)
+
+	-- Key system prompt
+	local keyScreen = new("Frame", {
+		Parent = screenGui,
+		BackgroundColor3 = theme.Primary,
+		Size = UDim2.fromOffset(300, 180),
+		Position = UDim2.fromScale(0.5, 0.5),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+	})
+	new("UICorner", {CornerRadius = UDim.new(0,14), Parent = keyScreen})
+	new("UIStroke", {Color = theme.Stroke, Thickness = 1, Transparency = 0.18, Parent = keyScreen})
+
+	local keyTitle = new("TextLabel", {
+		Parent = keyScreen,
+		BackgroundTransparency = 1,
+		Text = "Enter Key",
+		Font = Enum.Font.GothamSemibold,
+		TextSize = 20,
+		TextColor3 = theme.Text,
+		Position = UDim2.new(0,16,0,12),
+		Size = UDim2.new(1, -16, 0, 32),
+		TextXAlignment = Enum.TextXAlignment.Left,
+	})
+
+	local keyBox = new("TextBox", {
+		Parent = keyScreen,
+		Position = UDim2.new(0.1, 0, 0.3, 0),
+		Size = UDim2.new(0.8, 0, 0.2, 0),
+		BackgroundColor3 = theme.Panel,
+		Text = "",
+		PlaceholderText = "Type your key here",
+		Font = Enum.Font.Gotham,
+		TextSize = 14,
+		TextColor3 = theme.Text,
+	})
+	new("UICorner", {Parent = keyBox, CornerRadius = UDim.new(0,8)})
+	new("UIStroke", {Parent = keyBox, Color = theme.Stroke, Transparency = 0.3})
+
+	local submitBtn = new("TextButton", {
+		Parent = keyScreen,
+		Position = UDim2.new(0.3, 0, 0.6, 0),
+		Size = UDim2.new(0.4, 0, 0.2, 0),
+		BackgroundColor3 = theme.Accent,
+		Text = "Submit",
+		Font = Enum.Font.Gotham,
+		TextSize = 16,
+		TextColor3 = theme.Text,
+	})
+	new("UICorner", {Parent = submitBtn, CornerRadius = UDim.new(0,8)})
+
+	submitBtn.MouseButton1Click:Connect(function()
+		local enteredKey = keyBox.Text
+		-- Simple hardcoded key check for demonstration. In a real system, use HttpService to verify against a server or database.
+		if enteredKey == "testkey123" then
+			keyScreen:Destroy()
+			root.Visible = true
+			win:Notify({Title="Success", Text="Key verified!"})
+		else
+			win:Notify({Title="Error", Text="Invalid Key"})
 		end
 	end)
 
